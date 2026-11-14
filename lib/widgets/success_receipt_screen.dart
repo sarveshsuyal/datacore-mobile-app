@@ -371,12 +371,12 @@ Ledger Engine: Double-Entry Cryptographic Invariant (0 Race Conditions)
                 ),
                 child: Column(
                   children: [
-                    _buildReceiptRow('Transaction ID', _generatedTxId, isMonospace: true),
-                    const Divider(height: 16),
+                    _buildTransactionIdCard(_generatedTxId),
+                    const Divider(height: 18),
                     _buildReceiptRow('Bank UTR No.', _generatedUtr, isMonospace: true),
-                    const Divider(height: 16),
+                    const Divider(height: 18),
                     _buildReceiptRow('Debited From', widget.debitedAccount ?? 'DataCore Primary Bank'),
-                    const Divider(height: 16),
+                    const Divider(height: 18),
                     _buildReceiptRow('Ledger Latency', '$latency (Row-Lock Committed)'),
                   ],
                 ),
@@ -449,21 +449,79 @@ Ledger Engine: Double-Entry Cryptographic Invariant (0 Race Conditions)
     );
   }
 
+  Widget _buildTransactionIdCard(String txId) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Transaction ID',
+              style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: txId));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Transaction ID copied!')),
+                );
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Row(
+                  children: [
+                    Text(
+                      'Copy',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.copy_rounded, size: 12, color: AppTheme.primary),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        SelectableText(
+          txId,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'monospace',
+            color: AppTheme.textDark,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildReceiptRow(String label, String value, {bool isMonospace = false}) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            fontFamily: isMonospace ? 'monospace' : null,
-            color: AppTheme.textDark,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              fontFamily: isMonospace ? 'monospace' : null,
+              color: AppTheme.textDark,
+            ),
           ),
         ),
       ],

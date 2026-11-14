@@ -436,6 +436,7 @@ class _ServicesHubViewState extends State<ServicesHubView> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     title,

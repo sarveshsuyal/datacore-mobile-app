@@ -62,22 +62,20 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: v1.0.0-release
-          name: "DataCore Pay Mobile App (v1.0.0 Release)"
+          tag_name: v1.0.1-release
+          name: "DataCore Pay Mobile App (v1.0.1 Release)"
           body: |
-            ## 📱 DataCore Pay Customer Mobile Application (Android Release)
-            - **Platform:** Native Flutter on Android
-            - **UI Experience:** Enhanced PhonePe-style financial dashboard with Bharat BillPay & Cashback Hub
+            ## 📱 DataCore Pay Customer Mobile Application (v1.0.1 Android Release)
+            - **Platform:** Native Flutter on Android (versionCode 2, versionName 1.0.1)
+            - **UI Experience:** Enhanced PhonePe & Google Pay style financial dashboard with Bharat BillPay & Cashback Hub
             - **Backend Cloud:** Render (`https://datacore-backend-wktd.onrender.com`)
             - **Database Cloud:** Supabase PostgreSQL (`https://kphdytcnwanrmudtcojz.supabase.co`)
-            - **Key Features:**
-              - Strict ACID double-entry ledger integration
-              - Multi-strategy concurrency engine (Pessimistic, Optimistic, Atomic Conditional)
-              - 7-day extended JWT session auth with transparent token rotation
-              - Elevated center floating Scan QR button
-              - Bharat BillPay (BBPS) integration & Cashback Hub rewards
-              - Biometric authentication & Secure Token Storage
-              - Real-time transaction history and authoritative balance
+            - **Key Highlights in this Release:**
+              - 📸 **Live Camera QR Scanner:** Real hardware camera scanning with automatic UPI QR parser (`upi://pay?pa=...`) and manual fallback.
+              - 🔐 **Biometric & Screen Lock:** Device screen lock (PIN/pattern/fingerprint) like Google Pay/PhonePe.
+              - 💳 **Custom 4-Digit UPI PIN:** Set UPI PIN during registration and edit anytime under Account Preferences & Security.
+              - 📐 **Universal Cross-Screen Layout:** Fixed header collisions, smooth curved bottom bar with elevated Scan QR pill, and wrapped 2-line service tiles.
+              - 🧾 **Receipt Formatting:** 2-line clean alignment for 36-char Transaction UUIDs with one-tap clipboard copy.
           files: build/app/outputs/flutter-apk/app-release.apk
           prerelease: false
           make_latest: true

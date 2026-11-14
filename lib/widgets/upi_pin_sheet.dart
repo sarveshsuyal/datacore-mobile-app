@@ -50,7 +50,7 @@ class _UpiPinSheetState extends State<UpiPinSheet> {
     } else {
       HapticFeedback.vibrate();
       setState(() {
-        _errorMessage = 'Incorrect UPI PIN. Default is 1234.';
+        _errorMessage = 'Incorrect UPI PIN. Please try again.';
         _pin = '';
         _isVerifying = false;
       });
