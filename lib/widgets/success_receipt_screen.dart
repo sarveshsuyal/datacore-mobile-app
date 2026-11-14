@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../theme/app_theme.dart';
 
 class PaymentSuccessScreen extends StatefulWidget {
@@ -172,7 +175,7 @@ class _PaymentSuccessScreenState extends State<PaymentSuccessScreen>
     );
   }
 
-  void _shareReceipt() {
+  void _shareReceipt() async {
     final now = DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now());
     final receipt = '''
 === DataCore Pay Transaction Receipt ===
@@ -182,14 +185,76 @@ Paid To: ${widget.recipientName} (${widget.recipientHandle})
 Date & Time: $now
 UTR No: $_generatedUtr
 Transaction ID: $_generatedTxId
-Debited From: ${widget.debitedAccount ?? 'DataCore Account'}
+Debited From: ${widget.debitedAccount ?? 'DataCore Primary Bank'}
 Ledger Engine: Double-Entry Cryptographic Invariant (0 Race Conditions)
 ========================================
 ''';
-    Clipboard.setData(ClipboardData(text: receipt));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Receipt copied to clipboard!')),
-    );
+    try {
+      await Share.share(
+        receipt,
+        subject: 'DataCore Pay Payment Receipt - ₹${widget.amount.toStringAsFixed(2)}',
+      );
+    } catch (_) {
+      Clipboard.setData(ClipboardData(text: receipt));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Receipt copied to clipboard!')),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadReceipt() async {
+    final now = DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now());
+    final receipt = '''
+========================================
+       DATACORE PAY TRANSACTION RECEIPT
+========================================
+Status:           SUCCESSFUL (NPCI / Double-Entry Ledger)
+Amount:           ₹${widget.amount.toStringAsFixed(2)}
+Paid To:          ${widget.recipientName}
+Recipient Handle: ${widget.recipientHandle}
+Date & Time:      $now
+Bank UTR No:      $_generatedUtr
+Transaction ID:   $_generatedTxId
+Debited Account:  ${widget.debitedAccount ?? 'DataCore Primary Bank'}
+Engine Security:  100% Invariant Preserved • 0 Race Conditions
+========================================
+''';
+
+    try {
+      Directory? dir;
+      if (Platform.isAndroid) {
+        dir = await getExternalStorageDirectory();
+      }
+      dir ??= await getApplicationDocumentsDirectory();
+      final shortId = _generatedTxId.length > 12 ? _generatedTxId.substring(0, 12) : _generatedTxId;
+      final file = File('${dir.path}/Receipt_$shortId.txt');
+      await file.writeAsString(receipt);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Receipt saved: Receipt_$shortId.txt'),
+            action: SnackBarAction(
+              label: 'Share',
+              textColor: Colors.yellowAccent,
+              onPressed: () {
+                Share.share(receipt, subject: 'DataCore Pay Receipt');
+              },
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      Clipboard.setData(ClipboardData(text: receipt));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Receipt copied to clipboard!')),
+        );
+      }
+    }
   }
 
   @override
@@ -429,6 +494,22 @@ Ledger Engine: Double-Entry Cryptographic Invariant (0 Race Conditions)
                     ),
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Download Receipt File
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _downloadReceipt,
+                  icon: const Icon(Icons.download_rounded, size: 16, color: AppTheme.primary),
+                  label: const Text('Download Official Receipt (.txt)', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppTheme.primary.withOpacity(0.3)),
+                    backgroundColor: AppTheme.primary.withOpacity(0.04),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 12),

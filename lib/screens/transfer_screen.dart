@@ -8,8 +8,17 @@ import '../widgets/success_receipt_screen.dart';
 
 class TransferScreen extends StatefulWidget {
   final String? initialRecipient;
+  final String? initialName;
+  final String? initialAmount;
+  final String? initialNote;
 
-  const TransferScreen({super.key, this.initialRecipient});
+  const TransferScreen({
+    super.key,
+    this.initialRecipient,
+    this.initialName,
+    this.initialAmount,
+    this.initialNote,
+  });
 
   @override
   State<TransferScreen> createState() => _TransferScreenState();
@@ -17,8 +26,8 @@ class TransferScreen extends StatefulWidget {
 
 class _TransferScreenState extends State<TransferScreen> {
   late final TextEditingController _recipientController;
-  final TextEditingController _amountController = TextEditingController(text: '250.00');
-  final TextEditingController _descController = TextEditingController(text: 'Fund Transfer');
+  late final TextEditingController _amountController;
+  late final TextEditingController _descController;
   String _concurrencyStrategy = 'PESSIMISTIC';
 
   @override
@@ -28,6 +37,16 @@ class _TransferScreenState extends State<TransferScreen> {
       text: widget.initialRecipient?.isNotEmpty == true
           ? widget.initialRecipient!
           : 'bob@datacore.io',
+    );
+    _amountController = TextEditingController(
+      text: widget.initialAmount?.isNotEmpty == true
+          ? widget.initialAmount!
+          : '250.00',
+    );
+    _descController = TextEditingController(
+      text: widget.initialNote?.isNotEmpty == true
+          ? widget.initialNote!
+          : 'Fund Transfer',
     );
   }
 
@@ -100,12 +119,16 @@ class _TransferScreenState extends State<TransferScreen> {
 
     if (success) {
       final tx = accountProvider.lastExecutedTransaction;
+      final displayName = widget.initialName?.isNotEmpty == true
+          ? widget.initialName!
+          : (recipient.contains('@') ? recipient.split('@').first.toUpperCase() : recipient);
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => PaymentSuccessScreen(
             amount: amount,
-            recipientName: recipient.contains('@') ? recipient.split('@').first.toUpperCase() : recipient,
+            recipientName: displayName,
             recipientHandle: recipient,
             utr: tx?.idempotencyKey?.replaceAll('-', '').substring(0, 12),
             transactionId: tx?.id,
@@ -209,6 +232,53 @@ class _TransferScreenState extends State<TransferScreen> {
               ),
 
               const SizedBox(height: 20),
+
+              if (widget.initialName != null && widget.initialName!.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.initialName!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF15803D),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const Text(
+                              'Verified UPI Merchant / Payee',
+                              style: TextStyle(fontSize: 10, color: Color(0xFF16A34A)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               // Recipient Input Card
               Container(

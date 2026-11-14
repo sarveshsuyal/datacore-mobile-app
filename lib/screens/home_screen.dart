@@ -9,6 +9,7 @@ import '../widgets/balance_card.dart';
 import '../widgets/quick_actions_grid.dart';
 import '../widgets/receive_qr_sheet.dart';
 import '../widgets/services_hub_view.dart';
+import '../services/qr_parser_service.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
 
@@ -122,15 +123,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         final barcodes = capture.barcodes;
                         for (final barcode in barcodes) {
                           if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
-                            String raw = barcode.rawValue!.trim();
-                            if (raw.startsWith('upi://pay')) {
-                              final uri = Uri.tryParse(raw);
-                              if (uri != null && uri.queryParameters.containsKey('pa')) {
-                                raw = uri.queryParameters['pa']!;
-                              }
-                            }
+                            final parsed = ParsedQrPayment.parse(barcode.rawValue!);
                             Navigator.pop(ctx);
-                            context.go('/transfer?recipient=${Uri.encodeComponent(raw)}');
+                            final qParams = <String, String>{
+                              'recipient': parsed.recipient,
+                              'name': parsed.payeeName,
+                            };
+                            if (parsed.amount != null && parsed.amount! > 0) {
+                              qParams['amount'] = parsed.amount!.toStringAsFixed(2);
+                            }
+                            if (parsed.note != null && parsed.note!.isNotEmpty) {
+                              qParams['note'] = parsed.note!;
+                            }
+                            final uri = Uri(path: '/transfer', queryParameters: qParams);
+                            context.go(uri.toString());
                             break;
                           }
                         }
@@ -159,8 +165,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.arrow_forward_rounded, color: AppTheme.primary),
                   onPressed: () {
                     if (upiController.text.trim().isNotEmpty) {
+                      final parsed = ParsedQrPayment.parse(upiController.text.trim());
                       Navigator.pop(ctx);
-                      context.go('/transfer?recipient=${Uri.encodeComponent(upiController.text.trim())}');
+                      final qParams = <String, String>{
+                        'recipient': parsed.recipient,
+                        'name': parsed.payeeName,
+                      };
+                      if (parsed.amount != null && parsed.amount! > 0) {
+                        qParams['amount'] = parsed.amount!.toStringAsFixed(2);
+                      }
+                      final uri = Uri(path: '/transfer', queryParameters: qParams);
+                      context.go(uri.toString());
                     }
                   },
                 ),

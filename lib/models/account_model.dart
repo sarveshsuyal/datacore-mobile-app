@@ -38,4 +38,28 @@ class AccountModel {
       createdAt: json['created_at']?.toString() ?? '',
     );
   }
+
+  AccountModel copyWith({
+    String? id,
+    String? accountNumber,
+    String? userEmail,
+    String? userName,
+    String? balance,
+    String? currency,
+    int? version,
+    bool? isActive,
+    String? createdAt,
+  }) {
+    return AccountModel(
+      id: id ?? this.id,
+      accountNumber: accountNumber ?? this.accountNumber,
+      userEmail: userEmail ?? this.userEmail,
+      userName: userName ?? this.userName,
+      balance: balance ?? this.balance,
+      currency: currency ?? this.currency,
+      version: version ?? this.version,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

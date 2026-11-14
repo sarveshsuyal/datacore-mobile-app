@@ -1,7 +1,7 @@
 name: datacore_mobile
 description: "DataCore - Real-Time Data Concurrency & Transaction Engine Customer Mobile App"
 publish_to: "none"
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -18,6 +18,8 @@ dependencies:
   cupertino_icons: ^1.0.6
   local_auth: ^2.2.0
   mobile_scanner: ^5.2.3
+  share_plus: ^10.0.0
+  path_provider: ^2.1.3
 
 dev_dependencies:
   flutter_test:

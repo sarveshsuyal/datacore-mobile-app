@@ -62,20 +62,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: v1.0.1-release
-          name: "DataCore Pay Mobile App (v1.0.1 Release)"
+          tag_name: v1.0.2-release
+          name: "DataCore Pay Mobile App (v1.0.2 Release)"
           body: |
-            ## 📱 DataCore Pay Customer Mobile Application (v1.0.1 Android Release)
-            - **Platform:** Native Flutter on Android (versionCode 2, versionName 1.0.1)
-            - **UI Experience:** Enhanced PhonePe & Google Pay style financial dashboard with Bharat BillPay & Cashback Hub
+            ## 📱 DataCore Pay Customer Mobile Application (v1.0.2 Android Release)
+            - **Platform:** Native Flutter on Android (versionCode 3, versionName 1.0.2)
             - **Backend Cloud:** Render (`https://datacore-backend-wktd.onrender.com`)
             - **Database Cloud:** Supabase PostgreSQL (`https://kphdytcnwanrmudtcojz.supabase.co`)
             - **Key Highlights in this Release:**
-              - 📸 **Live Camera QR Scanner:** Real hardware camera scanning with automatic UPI QR parser (`upi://pay?pa=...`) and manual fallback.
-              - 🔐 **Biometric & Screen Lock:** Device screen lock (PIN/pattern/fingerprint) like Google Pay/PhonePe.
-              - 💳 **Custom 4-Digit UPI PIN:** Set UPI PIN during registration and edit anytime under Account Preferences & Security.
-              - 📐 **Universal Cross-Screen Layout:** Fixed header collisions, smooth curved bottom bar with elevated Scan QR pill, and wrapped 2-line service tiles.
-              - 🧾 **Receipt Formatting:** 2-line clean alignment for 36-char Transaction UUIDs with one-tap clipboard copy.
+              - 📤 **Native Share Sheet & Receipt Download:** Share transaction receipts directly via WhatsApp, Telegram, Gmail, SMS, or download official `.txt` receipts to local storage with one tap.
+              - 📸 **Intelligent Universal QR Parser:** Reads all UPI schemes (`upi://pay?pa=...&pn=...&am=...&tn=...`), pre-filling payee name, amount, and note automatically from Google Pay, PhonePe, and merchant QR standees.
+              - 🌐 **Universal Payment Support:** Send money to ANY external UPI ID, phone number, or bank account seamlessly with instant NPCI interbank client-settlement without backend rejection.
+              - 🔐 **Biometrics, Screen Lock & Custom UPI PIN:** Secure 4-digit PIN setup on registration, re-editable under Account, and screen pattern/fingerprint app lock.
+              - 📐 **Responsive Multi-Screen Layout:** Fixed overlapping headers, wrapped 2-line service tiles, and 2-line technical receipt formatting.
           files: build/app/outputs/flutter-apk/app-release.apk
           prerelease: false
           make_latest: true

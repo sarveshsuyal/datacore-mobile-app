@@ -51,7 +51,15 @@ final GoRouter _router = GoRouter(
       path: '/transfer',
       builder: (context, state) {
         final recipient = state.uri.queryParameters['recipient'];
-        return TransferScreen(initialRecipient: recipient);
+        final name = state.uri.queryParameters['name'];
+        final amount = state.uri.queryParameters['amount'];
+        final note = state.uri.queryParameters['note'];
+        return TransferScreen(
+          initialRecipient: recipient,
+          initialName: name,
+          initialAmount: amount,
+          initialNote: note,
+        );
       },
     ),
     GoRoute(
