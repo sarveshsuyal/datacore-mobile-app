@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/biometric_service.dart';
 import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,6 +14,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _showUnlockButton = false;
+
   @override
   void initState() {
     super.initState();
@@ -19,12 +23,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkStatus() async {
-    await Future.delayed(const Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
     final isLoggedIn = await auth.checkAuthStatus();
     if (!mounted) return;
     if (isLoggedIn) {
+      const storage = FlutterSecureStorage();
+      final bio = await storage.read(key: 'biometric_enabled');
+      if (bio == 'true') {
+        final result = await BiometricService().authenticate(
+          reason: 'Unlock DataCore Pay with Fingerprint or Screen Lock',
+          biometricOnly: false,
+        );
+        if (!mounted) return;
+        if (result != BiometricAuthResult.success) {
+          setState(() => _showUnlockButton = true);
+          return;
+        }
+      }
       context.go('/home');
     } else {
       context.go('/login');
@@ -84,14 +101,27 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             ),
             const SizedBox(height: 40),
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: Colors.white70,
+            if (_showUnlockButton)
+              ElevatedButton.icon(
+                onPressed: _checkStatus,
+                icon: const Icon(Icons.fingerprint_rounded),
+                label: const Text('Unlock App'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppTheme.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+              )
+            else
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white70,
+                ),
               ),
-            ),
           ],
         ),
       ),

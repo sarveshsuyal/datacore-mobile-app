@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/account_provider.dart';
@@ -60,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          top: 20,
+          top: 16,
           left: 20,
           right: 20,
         ),
@@ -75,37 +76,79 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: 16),
-            const Row(
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.qr_code_scanner_rounded, color: AppTheme.primary, size: 24),
-                SizedBox(width: 8),
-                Text(
-                  'Scan Any UPI QR Code',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                const Row(
+                  children: [
+                    Icon(Icons.qr_code_scanner_rounded, color: AppTheme.primary, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Scan Any UPI QR Code',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => Navigator.pop(ctx),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            // Scanner Viewport Mockup
-            Container(
-              width: 200,
-              height: 160,
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.primary, width: 2),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.camera_alt_outlined, size: 36, color: AppTheme.primary),
-                  SizedBox(height: 6),
-                  Text('Align QR code inside frame', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
-                ],
+            const SizedBox(height: 14),
+            // Live Real-Time Camera Scanner Viewport
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: 240,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppTheme.primary, width: 2),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    MobileScanner(
+                      controller: MobileScannerController(
+                        detectionSpeed: DetectionSpeed.normal,
+                        facing: CameraFacing.back,
+                      ),
+                      onDetect: (capture) {
+                        final barcodes = capture.barcodes;
+                        for (final barcode in barcodes) {
+                          if (barcode.rawValue != null && barcode.rawValue!.isNotEmpty) {
+                            String raw = barcode.rawValue!.trim();
+                            if (raw.startsWith('upi://pay')) {
+                              final uri = Uri.tryParse(raw);
+                              if (uri != null && uri.queryParameters.containsKey('pa')) {
+                                raw = uri.queryParameters['pa']!;
+                              }
+                            }
+                            Navigator.pop(ctx);
+                            context.go('/transfer?recipient=${Uri.encodeComponent(raw)}');
+                            break;
+                          }
+                        }
+                      },
+                    ),
+                    Container(
+                      width: 170,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             const Text('OR ENTER UPI ID MANUALLY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
             const SizedBox(height: 8),
             TextField(
@@ -123,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -149,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top User Bar (PhonePe styled)
+            // Top User Bar (Clean, responsive Google Pay / PhonePe style)
             Row(
               children: [
                 GestureDetector(
@@ -171,6 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -191,64 +235,89 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppTheme.textDark),
                         ],
                       ),
-                      const Row(
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.circle, size: 7, color: Color(0xFF10B981)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Protected Ledger • Render Cloud',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.textMuted),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Flexible(
+                            child: Text(
+                              'Protected Ledger • Render',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF10B981),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppTheme.textDark),
-                  tooltip: 'Scan QR',
-                  onPressed: _openScanModal,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.dark_mode_outlined, size: 20, color: AppTheme.textDark),
-                  tooltip: 'Theme',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Switched theme mode.')),
-                    );
-                  },
-                ),
-                Stack(
-                  alignment: Alignment.topRight,
+                // Compact Action Buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.notifications_none_rounded, size: 22, color: AppTheme.textDark),
+                      icon: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppTheme.textDark),
+                      padding: const EdgeInsets.all(6),
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      tooltip: 'Scan QR',
+                      onPressed: _openScanModal,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.dark_mode_outlined, size: 20, color: AppTheme.textDark),
+                      padding: const EdgeInsets.all(6),
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      tooltip: 'Theme',
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('No unread notifications.')),
+                          const SnackBar(content: Text('Switched theme mode.')),
                         );
                       },
                     ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.error,
-                          shape: BoxShape.circle,
+                    Stack(
+                      alignment: Alignment.topRight,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.notifications_none_rounded, size: 22, color: AppTheme.textDark),
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('No unread notifications.')),
+                            );
+                          },
                         ),
-                        child: const Text(
-                          '0',
-                          style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.error,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Text(
+                              '0',
+                              style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.account_circle_outlined, size: 22, color: AppTheme.textDark),
-                  onPressed: () => setState(() => _currentTabIndex = 3),
                 ),
               ],
             ),
@@ -745,71 +814,73 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        height: 68,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(0, Icons.home_rounded, 'Home'),
-            _buildNavItem(1, Icons.grid_view_rounded, 'Services'),
-            // Elevated Center Floating Scan QR Button
-            GestureDetector(
-              onTap: _openScanModal,
-              child: Transform.translate(
-                offset: const Offset(0, -10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1D4ED8), Color(0xFF2563EB), Color(0xFF4F46E5)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2563EB).withOpacity(0.45),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          height: 66,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 16,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(0, Icons.home_rounded, 'Home'),
+              _buildNavItem(1, Icons.grid_view_rounded, 'Services'),
+              // Elevated Center Floating Scan QR Button
+              GestureDetector(
+                onTap: _openScanModal,
+                child: Transform.translate(
+                  offset: const Offset(0, -12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1D4ED8), Color(0xFF2563EB), Color(0xFF4F46E5)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2563EB).withOpacity(0.45),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 24),
+                        ),
                       ),
-                      child: const Center(
-                        child: Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 24),
+                      const SizedBox(height: 3),
+                      const Text(
+                        'Scan QR',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    const Text(
-                      'Scan QR',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            _buildNavItem(2, Icons.history_rounded, 'History'),
-            _buildNavItem(3, Icons.person_rounded, 'Profile'),
-          ],
+              _buildNavItem(2, Icons.history_rounded, 'History'),
+              _buildNavItem(3, Icons.person_rounded, 'Profile'),
+            ],
+          ),
         ),
       ),
     );

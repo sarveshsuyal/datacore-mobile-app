@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 
 enum BiometricAuthResult {
   success,
@@ -13,31 +14,52 @@ class BiometricService {
   factory BiometricService() => _instance;
   BiometricService._internal();
 
-  final bool _isEnrolled = true;
-  final bool _isHardwareAvailable = true;
+  final LocalAuthentication _auth = LocalAuthentication();
 
-  /// Check if device supports platform biometric authentication
+  /// Check if device supports platform biometric authentication or screen lock
   Future<bool> canCheckBiometrics() async {
-    return _isHardwareAvailable;
+    try {
+      final canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
+      final canAuthenticate = canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
+      return canAuthenticate;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Check if user has enrolled biometrics on device
   Future<bool> isBiometricsEnrolled() async {
-    return _isEnrolled;
+    try {
+      final List<BiometricType> availableBiometrics = await _auth.getAvailableBiometrics();
+      return availableBiometrics.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
-  /// Prompt native platform biometric dialog with fallback support
+  /// Prompt native platform biometric or device screen lock (PIN/Pattern/Password/Fingerprint/Face)
   Future<BiometricAuthResult> authenticate({
-    String reason = 'Authenticate to access your DataCore wallet',
-    bool useErrorDialogs = true,
-    bool stickyAuth = true,
+    String reason = 'Unlock DataCore Pay with Fingerprint, Face or Screen Lock',
+    bool biometricOnly = false,
   }) async {
     try {
-      // In production Flutter on Android/iOS, local_auth MethodChannel invokes BiometricPrompt
-      // Here we provide safe native prompt handling with robust error states
-      return BiometricAuthResult.success;
+      final isSupported = await _auth.isDeviceSupported() || await _auth.canCheckBiometrics;
+      if (!isSupported) {
+        return BiometricAuthResult.notAvailable;
+      }
+
+      final authenticated = await _auth.authenticate(
+        localizedReason: reason,
+        options: AuthenticationOptions(
+          biometricOnly: biometricOnly,
+          stickyAuth: true,
+          useErrorDialogs: true,
+        ),
+      );
+
+      return authenticated ? BiometricAuthResult.success : BiometricAuthResult.canceled;
     } on PlatformException catch (e) {
-      if (e.code == 'NotAvailable') {
+      if (e.code == 'NotAvailable' || e.code == 'PasscodeNotSet') {
         return BiometricAuthResult.notAvailable;
       } else if (e.code == 'NotEnrolled') {
         return BiometricAuthResult.notEnrolled;

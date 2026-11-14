@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -16,6 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _upiPinController = TextEditingController(text: '1234');
   bool _obscurePassword = true;
 
   @override
@@ -24,11 +26,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _upiPinController.dispose();
     super.dispose();
   }
 
   void _submit() async {
     final auth = context.read<AuthProvider>();
+    final pin = _upiPinController.text.trim();
+    if (pin.length != 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please set a 4-digit numeric UPI PIN.')),
+      );
+      return;
+    }
+
     final success = await auth.register(
       fullName: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -37,6 +48,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     if (!mounted) return;
     if (success) {
+      const storage = FlutterSecureStorage();
+      await storage.write(key: 'user_upi_pin', value: pin);
       context.go('/home');
     }
   }
@@ -195,6 +208,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: const InputDecoration(
                   hintText: 'Re-enter your password',
                   prefixIcon: Icon(Icons.lock_reset_rounded, color: AppTheme.primary, size: 20),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // Set 4-Digit Transaction UPI PIN
+              const Text('SET 4-DIGIT TRANSACTION UPI PIN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _upiPinController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. 1234 (Used to authorize transfers)',
+                  counterText: '',
+                  prefixIcon: Icon(Icons.pin_rounded, color: AppTheme.primary, size: 20),
                 ),
               ),
 

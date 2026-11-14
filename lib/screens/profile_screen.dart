@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -20,6 +21,139 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _biometricsEnabled = true;
   bool _chimesEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    const storage = FlutterSecureStorage();
+    final bio = await storage.read(key: 'biometric_enabled');
+    if (bio != null) {
+      setState(() => _biometricsEnabled = bio == 'true');
+    }
+  }
+
+  void _showChangePinModal(BuildContext context) {
+    final oldPinController = TextEditingController();
+    final newPinController = TextEditingController();
+    final confirmPinController = TextEditingController();
+    String? errorText;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            top: 20,
+            left: 20,
+            right: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  Icon(Icons.pin_rounded, color: AppTheme.primary, size: 22),
+                  SizedBox(width: 8),
+                  Text('Change 4-Digit UPI PIN', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                ],
+              ),
+              const SizedBox(height: 14),
+              if (errorText != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.errorLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(errorText!, style: const TextStyle(color: AppTheme.error, fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 10),
+              ],
+              const Text('CURRENT 4-DIGIT PIN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: oldPinController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                decoration: const InputDecoration(hintText: 'Current PIN (default: 1234)', counterText: ''),
+              ),
+              const SizedBox(height: 12),
+              const Text('NEW 4-DIGIT PIN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: newPinController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                decoration: const InputDecoration(hintText: 'New 4-digit PIN', counterText: ''),
+              ),
+              const SizedBox(height: 12),
+              const Text('CONFIRM NEW PIN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.textMuted)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: confirmPinController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                decoration: const InputDecoration(hintText: 'Re-enter new 4-digit PIN', counterText: ''),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    const storage = FlutterSecureStorage();
+                    final savedPin = await storage.read(key: 'user_upi_pin') ?? '1234';
+                    if (oldPinController.text.trim() != savedPin) {
+                      setModalState(() => errorText = 'Current PIN is incorrect.');
+                      return;
+                    }
+                    if (newPinController.text.trim().length != 4) {
+                      setModalState(() => errorText = 'New PIN must be 4 digits.');
+                      return;
+                    }
+                    if (newPinController.text.trim() != confirmPinController.text.trim()) {
+                      setModalState(() => errorText = 'New PIN and confirm PIN do not match.');
+                      return;
+                    }
+                    await storage.write(key: 'user_upi_pin', value: newPinController.text.trim());
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('UPI PIN updated successfully!')),
+                    );
+                  },
+                  child: const Text('Update UPI PIN'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -309,26 +443,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onChanged: (val) async {
                     if (val) {
                       final result = await BiometricService().authenticate(
-                        reason: 'Scan your fingerprint to enable biometric unlock',
+                        reason: 'Verify fingerprint or screen lock to enable app lock',
+                        biometricOnly: false,
                       );
                       if (!mounted) return;
                       if (result == BiometricAuthResult.success) {
+                        const storage = FlutterSecureStorage();
+                        await storage.write(key: 'biometric_enabled', value: 'true');
                         setState(() => _biometricsEnabled = true);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Biometric security enabled successfully.')),
+                          const SnackBar(content: Text('Screen Lock / Biometric security enabled.')),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Biometric verification cancelled or failed.')),
+                          const SnackBar(content: Text('Authentication cancelled or failed.')),
                         );
                       }
                     } else {
+                      const storage = FlutterSecureStorage();
+                      await storage.write(key: 'biometric_enabled', value: 'false');
                       setState(() => _biometricsEnabled = false);
                     }
                   },
-                  title: const Text('Biometric Fingerprint Unlock', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Require native biometrics to open app', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                  title: const Text('App Lock & Biometric Unlock', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Use fingerprint, face or phone screen lock PIN', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
                   activeColor: AppTheme.primary,
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.pin_rounded, color: AppTheme.primary, size: 20),
+                  title: const Text('Change 4-Digit UPI PIN', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Set or update transaction authorization PIN', style: TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
+                  onTap: () => _showChangePinModal(context),
                 ),
                 const Divider(height: 1),
                 SwitchListTile(

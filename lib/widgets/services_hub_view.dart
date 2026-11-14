@@ -444,7 +444,7 @@ class _ServicesHubViewState extends State<ServicesHubView> {
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textDark,
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
@@ -705,7 +705,7 @@ class _ServicesHubViewState extends State<ServicesHubView> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              childAspectRatio: 2.1,
+              childAspectRatio: 1.75,
               children: [
                 _buildServiceCard(
                   emoji: '⚡',
@@ -752,7 +752,7 @@ class _ServicesHubViewState extends State<ServicesHubView> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              childAspectRatio: 2.1,
+              childAspectRatio: 1.75,
               children: [
                 _buildServiceCard(
                   emoji: '📱',
@@ -799,7 +799,7 @@ class _ServicesHubViewState extends State<ServicesHubView> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              childAspectRatio: 2.1,
+              childAspectRatio: 1.75,
               children: [
                 _buildServiceCard(
                   emoji: '💳',

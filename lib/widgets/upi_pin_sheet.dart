@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../theme/app_theme.dart';
 
 class UpiPinSheet extends StatefulWidget {
@@ -22,24 +23,47 @@ class UpiPinSheet extends StatefulWidget {
 
 class _UpiPinSheetState extends State<UpiPinSheet> {
   String _pin = '';
+  String? _errorMessage;
+  bool _isVerifying = false;
 
   void _onKeyPress(String val) {
+    if (_isVerifying) return;
     HapticFeedback.lightImpact();
     if (_pin.length < 4) {
       setState(() {
+        _errorMessage = null;
         _pin += val;
       });
       if (_pin.length == 4) {
-        widget.onPinSubmitted(_pin);
+        _verifyAndSubmit();
       }
     }
   }
 
+  Future<void> _verifyAndSubmit() async {
+    setState(() => _isVerifying = true);
+    const storage = FlutterSecureStorage();
+    final savedPin = await storage.read(key: 'user_upi_pin') ?? '1234';
+
+    if (_pin == savedPin) {
+      widget.onPinSubmitted(_pin);
+    } else {
+      HapticFeedback.vibrate();
+      setState(() {
+        _errorMessage = 'Incorrect UPI PIN. Default is 1234.';
+        _pin = '';
+        _isVerifying = false;
+      });
+    }
+  }
+
   void _onBackspace() {
+    if (_isVerifying) return;
     HapticFeedback.lightImpact();
     if (_pin.isNotEmpty) {
       setState(() {
         _pin = _pin.substring(0, _pin.length - 1);
+        _errorMessage = null;
       });
     }
   }
@@ -171,7 +195,21 @@ class _UpiPinSheetState extends State<UpiPinSheet> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          if (_errorMessage != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.errorLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppTheme.error, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ] else
+            const SizedBox(height: 24),
 
           // PIN Indicator Dots
           Row(
