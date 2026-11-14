@@ -1,0 +1,11 @@
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.pub/
+*.apk
+*.aab
+.env
+.idea/
+*.iml
+.vscode/

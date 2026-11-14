@@ -1,0 +1,85 @@
+name: Build DataCore Android APK
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Cache Flutter Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: ${{ runner.os }}-pub-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Analyze Dart Source Code
+        run: flutter analyze lib/ --no-fatal-infos
+
+      - name: Build Android Release APK
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://datacore-backend-wktd.onrender.com
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DataCore-Pay-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: v1.0.0-release
+          name: "DataCore Pay Mobile App (v1.0.0 Release)"
+          body: |
+            ## 📱 DataCore Pay Customer Mobile Application (Android Release)
+            - **Platform:** Native Flutter on Android
+            - **UI Experience:** Enhanced PhonePe-style financial dashboard with Bharat BillPay & Cashback Hub
+            - **Backend Cloud:** Render (`https://datacore-backend-wktd.onrender.com`)
+            - **Database Cloud:** Supabase PostgreSQL (`https://kphdytcnwanrmudtcojz.supabase.co`)
+            - **Key Features:**
+              - Strict ACID double-entry ledger integration
+              - Multi-strategy concurrency engine (Pessimistic, Optimistic, Atomic Conditional)
+              - 7-day extended JWT session auth with transparent token rotation
+              - Elevated center floating Scan QR button
+              - Bharat BillPay (BBPS) integration & Cashback Hub rewards
+              - Biometric authentication & Secure Token Storage
+              - Real-time transaction history and authoritative balance
+          files: build/app/outputs/flutter-apk/app-release.apk
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
